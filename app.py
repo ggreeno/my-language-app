@@ -197,7 +197,7 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
                 with c1:
                     st.markdown(f"#### {tone_name} — **{word}** (`{roman}`)")
                     st.caption(desc)
-       		with c2:
+                with c2:
             if st.button("🔊 聽聲調", key=f"ttone_{idx}", use_container_width=True):
                 st.audio(text_to_speech(word, "th"), format="audio/mp3", autoplay=True)
 
@@ -303,4 +303,3 @@ elif mode == "🇺🇸 英文：AI 語音對話家教":
     user_text = st.chat_input("✍️ 也可以直接打字輸入英文（或用中文問怎麼說）...")
     if user_text:
         process_tutor_reply(user_text, user_text)
-
