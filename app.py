@@ -201,7 +201,8 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
             ("ย", "ยอ ยักษ์ (Yor Yak)", "巨人 (y)"),
             ("ร", "รอ เรือ (Ror Ruea)", "船 (r)"),
             ("ล", "ลอ ลิง (Lor Ling)", "猴子 (l)"),
-            ("ว", "วอ แหวน (Wor Waaen)", "戒指 (w)"),
+            ("ว", "วอ แหวน (Wor Waen)", "戒指 (w)"),
+            ("ฮ", "ฮอ นกฮูก (Hor Nok-huuk)", "貓頭鷹 (h)"),
         ]
         cols_l = st.columns(2)
         for idx, (char, name, desc) in enumerate(low_c):
@@ -213,73 +214,24 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
                         st.audio(text_to_speech(name, "th"), format="audio/mp3", autoplay=True)
 
     with tab2:
-        st.subheader("泰文母音位置示範（以中子音 ก 為例）")
-        st.write("泰文母音分「短音」與「長音」，且會出現在子音的不同方位：")
+        st.subheader("常用母音與書寫位置（以 อ 為子音示範）")
+        st.write("泰文母音不會單獨出現，必須依附在子音的「前、後、上、下」四個方位：")
         thai_vowels = [
-            ("ก + า = กา", "gaa (長音 aa)", "寫在子音【右邊】"),
-            ("ก + ะ = กะ", "ga (短音 a)", "寫在子音【右邊】"),
-            ("ก + ี = กี", "gii (長音 ii)", "寫在子音【上面】"),
-            ("ก + ิ = กิ", "gi (短音 i)", "寫在子音【上面】"),
-            ("ก + ู = กู", "guu (長音 uu)", "寫在子音【下面】"),
-            ("ก + ุ = กุ", "gu (短音 u)", "寫在子音【下面】"),
-            ("เ + ก = เก", "gee (長音 ee)", "寫在子音【左邊】"),
-            ("แ + ก = แก", "gaae (長音 aae)", "寫在子音【左邊】"),
-            ("โ + ก = โก", "goo (長音 oo)", "寫在子音【左邊】"),
-            ("ไ + ก = ไก", "gai (短音 ai)", "寫在子音【左邊】"),
+            ("-า  (อา)", "อา", "aa (長音 啊)", "寫在子音【右邊】"),
+            ("-ิ  (อิ)", "อิ", "i (短音 衣)", "寫在子音【上方】"),
+            ("-ี  (อี)", "อี", "ii (長音 衣)", "寫在子音【上方】"),
+            ("-ุ  (อุ)", "อุ", "u (短音 屋)", "寫在子音【下方】"),
+            ("-ู  (อู)", "อู", "uu (長音 屋)", "寫在子音【下方】"),
+            ("เ-  (เอ)", "เอ", "ee (長音 欸)", "寫在子音【左邊】"),
+            ("แ-  (แอ)", "แอ", "aae (大嘴 欸)", "寫在子音【左邊】"),
+            ("โ-  (โอ)", "โอ", "oo (長音 歐)", "寫在子音【左邊】"),
+            ("ใ- / ไ-  (ไอ)", "ไอ", "ai (愛)", "寫在子音【左邊】"),
+            ("-ำ  (อำ)", "อำ", "am (暗)", "上方圓圈＋右邊長劃"),
         ]
-        for idx, (example, roman, pos) in enumerate(thai_vowels):
-            with st.container(border=True):
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"### {example}  `{roman}`")
-                    st.caption(f"位置規則：{pos}")
-                with c2:
-                    word_to_read = example.split("=")[-1].strip()
-                    if st.button("🔊 唸拼讀", key=f"tv_{idx}"):
-                        st.audio(text_to_speech(word_to_read, "th"), format="audio/mp3", autoplay=True)
-
-    with tab3:
-        with st.spinner("AI 家教正在聽你說並思考回覆..."):
-            try:
-                if new_audio_bytes:
-                    contents_payload = [
-                        f"最近的對話紀錄：\n{history_text}\n請聆聽學習者這段語音，並依照規定格式回覆：",
-                        types.Part.from_bytes(data=new_audio_bytes, mime_type="audio/wav")
-                    ]
-                else:
-                    contents_payload = f"最近的對話紀錄：\n{history_text}\n學習者剛才輸入：{user_text}\n請依照規定格式回覆："
-
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=contents_payload,
-                    config=types.GenerateContentConfig(
-                        system_instruction=system_instruction,
-                        temperature=0.7,
-                    )
-                )
-                reply_raw = response.text
-                parts = reply_raw.split("===SPLIT===")
-                if len(parts) >= 3:
-                    user_said, eng_part, fb_part = parts[0].strip(), parts[1].strip(), parts[2].strip()
-                elif len(parts) == 2:
-                    user_said = user_text if user_text else "🎤 (語音訊息)"
-                    eng_part, fb_part = parts[0].strip(), parts[1].strip()
-                else:
-                    user_said = user_text if user_text else "🎤 (語音訊息)"
-                    eng_part, fb_part = reply_raw.strip(), ""
-
-                st.session_state.ai_messages.append({
-                    "role": "user",
-                    "content": f"🗣️ {user_said}" if new_audio_bytes else user_said
-                })
-                st.session_state.ai_messages.append({
-                    "role": "assistant",
-                    "english": eng_part,
-                    "feedback": fb_part,
-                    "autoplay": True
-                })
-                st.rerun()
-            except Exception as e:
-                st.error(f"連線 AI 時發生問題，請確認 Secrets 中的金鑰是否正確。錯誤細節：{e}")
-
-# === 程式碼結束 ===
+        cols_v = st.columns(2)
+        for idx, (pattern, sound, roman, pos) in enumerate(thai_vowels):
+            with cols_v[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {pattern}")
+                    st.caption(f"發音：`{roman}` ｜ {pos}")
+                    if st.button("🔊 聽發音", key=f"tv_{idx}"):
