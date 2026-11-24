@@ -128,7 +128,6 @@ if mode == "🇰🇷 韓文：完整發音與拼讀機":
         with col_sel2:
             sel_v = st.selectbox("2. 選擇母音：", v_list)
         
-        # 利用 Unicode 數學公式精準組合韓文字
         c_idx = c_list.index(sel_c)
         v_idx = v_list.index(sel_v)
         combined_char = chr(0xAC00 + (c_idx * 21 + v_idx) * 28)
@@ -230,10 +229,13 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
         ]
         for idx, (example, roman, pos) in enumerate(thai_vowels):
             with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
+                c1, c2 = st.columns(2)
                 with c1:
                     st.markdown(f"### {example}  `{roman}`")
                     st.caption(f"位置規則：{pos}")
                 with c2:
                     word_to_read = example.split("=")[-1].strip()
                     if st.button("🔊 唸拼讀", key=f"tv_{idx}"):
+                        st.audio(text_to_speech(word_to_read, "th"), format="audio/mp3", autoplay=True)
+
+    with tab3:
