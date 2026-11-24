@@ -102,7 +102,6 @@ if mode == "🇰🇷 韓文：完整發音與拼讀機":
             st.markdown(f"<h1 style='text-align: center;'>{sel_c} + {sel_v} = {combined_char}</h1>", unsafe_allow_html=True)
             if st.button("🔊 聽組合後的發音", use_container_width=True):
                 st.audio(text_to_speech(combined_char, "ko"), format="audio/mp3", autoplay=True)
-
 # ==========================================
 # 模組二：泰文
 # ==========================================
@@ -198,8 +197,8 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
                     st.markdown(f"#### {tone_name} — **{word}** (`{roman}`)")
                     st.caption(desc)
                 with c2:
-            if st.button("🔊 聽聲調", key=f"ttone_{idx}", use_container_width=True):
-                st.audio(text_to_speech(word, "th"), format="audio/mp3", autoplay=True)
+                    if st.button("🔊 聽聲調", key=f"ttone_{idx}", use_container_width=True):
+                        st.audio(text_to_speech(word, "th"), format="audio/mp3", autoplay=True)
 
 # ==========================================
 # 模組三：英文 AI 語音對話家教
