@@ -1,12 +1,15 @@
 import streamlit as st
 from gtts import gTTS
+from google import genai
+from google.genai import types
 import io
 
 # 1. 設定網頁基本資訊
 st.set_page_config(page_title="專屬三語學習空間", page_icon="🎓", layout="centered")
 st.title("🎓 專屬三語學習空間")
 
-# 語音生成函式
+# 語音生成函式（快取避免重複生成相同發音）
+@st.cache_data(show_spinner=False)
 def text_to_speech(text, lang_code):
     tts = gTTS(text=text, lang=lang_code)
     audio_bytes = io.BytesIO()
@@ -18,168 +21,219 @@ def text_to_speech(text, lang_code):
 st.sidebar.header("📚 選擇學習模組")
 mode = st.sidebar.radio(
     "請選擇想練習的語言：",
-    ["🇰🇷 韓文：零基礎發音拼音", "🇹🇭 泰文：零基礎發音拼音", "🇺🇸 英文：情境對話練習"]
+    [
+        "🇰🇷 韓文：完整發音與拼讀機",
+        "🇹🇭 泰文：完整字母與聲調表",
+        "🇺🇸 英文：AI 自由對話家教"
+    ]
 )
 
 # ==========================================
-# 模組一：韓文零基礎發音拼音
+# 模組一：韓文完整發音與拼讀機
 # ==========================================
-if mode == "🇰🇷 韓文：零基礎發音拼音":
-    st.header("🇰🇷 韓文零基礎：40音拼讀入門")
-    st.info("💡 韓文字就像積木，是由「子音（左/上）」＋「母音（右/下）」組合而成的！")
+if mode == "🇰🇷 韓文：完整發音與拼讀機":
+    st.header("🇰🇷 韓文零基礎：完整發音表與拼讀機")
+    st.info("💡 韓文字由「子音」＋「母音」拼成。先聽熟單音，再到第三個分頁玩「互動拼讀機」！")
 
-    tab1, tab2 = st.tabs(["1️⃣ 基礎母音 (母音)", "2️⃣ 子音＋母音 拼讀練習"])
+    tab1, tab2, tab3 = st.tabs(["1️⃣ 母音表 (21個)", "2️⃣ 子音表 (19個)", "3️⃣ 互動拼讀機"])
 
     with tab1:
-        st.subheader("先認識最基礎的 6 個單母音")
-        korean_vowels = [
-            {"char": "ㅏ", "sound": "아", "roman": "a (啊)", "tip": "嘴巴張大，舌頭放平"},
-            {"char": "ㅓ", "sound": "어", "roman": "eo (喔)", "tip": "嘴巴自然張開，比「啊」小一點"},
-            {"char": "ㅗ", "sound": "오", "roman": "o (歐)", "tip": "嘴唇向前嘟圓"},
-            {"char": "ㅜ", "sound": "우", "roman": "u (屋)", "tip": "嘴唇嘟得比 ㅗ 更小"},
-            {"char": "ㅡ", "sound": "으", "roman": "eu (呃)", "tip": "嘴角向兩側拉開，上下牙齒微合"},
-            {"char": "ㅣ", "sound": "이", "roman": "i (衣)", "tip": "嘴角向兩側拉開，像微笑"},
+        st.subheader("基本單母音 (10個)")
+        basic_vowels = [
+            ("ㅏ", "아", "a (啊)", "嘴巴自然張大"),
+            ("ㅑ", "야", "ya (呀)", "先發 i 再滑向 a"),
+            ("ㅓ", "어", "eo (喔)", "嘴型微張、舌頭微縮"),
+            ("ㅕ", "여", "yeo (唷)", "先發 i 再滑向 eo"),
+            ("ㅗ", "오", "o (歐)", "嘴唇向前嘟圓"),
+            ("ㅛ", "요", "yo (優)", "先發 i 再滑向 o"),
+            ("ㅜ", "우", "u (屋)", "嘴唇嘟得比 ㅗ 更小"),
+            ("ㅠ", "유", "yu (淤)", "先發 i 再滑向 u"),
+            ("ㅡ", "으", "eu (呃)", "嘴角向兩側拉開、牙齒微合"),
+            ("ㅣ", "이", "i (衣)", "嘴角向兩側拉開像微笑"),
         ]
-        for idx, v in enumerate(korean_vowels):
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"### {v['char']}  （讀音：{v['roman']}）")
-                    st.write(f"發音嘴型：{v['tip']}")
-                with c2:
-                    if st.button("🔊 聽發音", key=f"kv_{idx}"):
-                        st.audio(text_to_speech(v['sound'], "ko"), format="audio/mp3", autoplay=True)
+        cols = st.columns(2)
+        for idx, (char, sound, roman, tip) in enumerate(basic_vowels):
+            with cols[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char}  `{roman}`")
+                    st.caption(tip)
+                    if st.button("🔊 聽發音", key=f"kbv_{idx}"):
+                        st.audio(text_to_speech(sound, "ko"), format="audio/mp3", autoplay=True)
+
+        st.subheader("複合母音 (11個)")
+        comp_vowels = [
+            ("ㅐ", "애", "ae", "嘴型比 ㅏ 略小"),
+            ("ㅒ", "얘", "yae", "i + ae"),
+            ("ㅔ", "에", "e", "現代韓語發音與 ㅐ 幾乎相同"),
+            ("ㅖ", "예", "ye", "i + e"),
+            ("ㅘ", "와", "wa", "ㅗ + ㅏ 快速連讀"),
+            ("ㅙ", "왜", "wae", "ㅗ + ㅐ 快速連讀"),
+            ("ㅚ", "외", "oe", "現代韓語多唸成 we"),
+            ("ㅝ", "워", "wo", "ㅜ + ㅓ 快速連讀"),
+            ("ㅞ", "웨", "we", "ㅜ + ㅔ 快速連讀"),
+            ("ㅟ", "위", "wi", "ㅜ + ㅣ 快速連讀"),
+            ("ㅢ", "의", "ui", "ㅡ + ㅣ 快速連讀"),
+        ]
+        cols2 = st.columns(2)
+        for idx, (char, sound, roman, tip) in enumerate(comp_vowels):
+            with cols2[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char}  `{roman}`")
+                    st.caption(tip)
+                    if st.button("🔊 聽發音", key=f"kcv_{idx}"):
+                        st.audio(text_to_speech(sound, "ko"), format="audio/mp3", autoplay=True)
 
     with tab2:
-        st.subheader("子音 ㄱ (g/k) 搭配母音的拼讀")
-        korean_combos = [
-            {"formula": "ㄱ (g) + ㅏ (a)", "result": "가", "roman": "ga", "word": "가수 (歌手)"},
-            {"formula": "ㄱ (g) + ㅓ (eo)", "result": "거", "roman": "geo", "word": "거울 (鏡子)"},
-            {"formula": "ㄱ (g) + ㅗ (o)", "result": "고", "roman": "go", "word": "고기 (肉)"},
-            {"formula": "ㄱ (g) + ㅜ (u)", "result": "구", "roman": "gu", "word": "구두 (皮鞋)"},
-            {"formula": "ㄱ (g) + ㅣ (i)", "result": "기", "roman": "gi", "word": "기차 (火車)"},
+        st.subheader("基本子音 (14個) ＋ 雙子音 (5個)")
+        consonants = [
+            ("ㄱ", "가", "g / k", "舌根抵住軟顎（不送氣）"),
+            ("ㄴ", "나", "n", "舌尖抵住上齒齦（鼻音）"),
+            ("ㄷ", "다", "d / t", "舌尖抵住上齒齦（不送氣）"),
+            ("ㄹ", "라", "r / l", "舌尖輕彈上顎"),
+            ("ㅁ", "마", "m", "雙唇緊閉（鼻音）"),
+            ("ㅂ", "바", "b / p", "雙唇閉合後放開（不送氣）"),
+            ("ㅅ", "사", "s", "舌尖接近上齒齦摩擦出氣"),
+            ("ㅇ", "아", "無聲 / ng", "在字首不發音；在字尾發 ng"),
+            ("ㅈ", "자", "j", "舌面抵住硬顎（不送氣）"),
+            ("ㅊ", "차", "ch", "ㅈ 的送氣音（強氣流）"),
+            ("ㅋ", "카", "k", "ㄱ 的送氣音（強氣流）"),
+            ("ㅌ", "타", "t", "ㄷ 的送氣音（強氣流）"),
+            ("ㅍ", "파", "p", "ㅂ 的送氣音（強氣流）"),
+            ("ㅎ", "하", "h", "喉嚨呼氣音"),
+            ("ㄲ", "까", "kk (緊音)", "聲帶緊繃用力發出，不送氣"),
+            ("ㄸ", "따", "tt (緊音)", "聲帶緊繃用力發出，不送氣"),
+            ("ㅃ", "빠", "pp (緊音)", "聲帶緊繃用力發出，不送氣"),
+            ("ㅆ", "싸", "ss (緊音)", "比 ㅅ 更急促有力"),
+            ("ㅉ", "짜", "jj (緊音)", "聲帶緊繃用力發出，不送氣"),
         ]
-        for idx, item in enumerate(korean_combos):
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"### {item['formula']} ＝ **{item['result']}** ({item['roman']})")
-                    st.caption(f"延伸單字範例：{item['word']}")
-                with c2:
-                    if st.button("🔊 唸拼讀", key=f"kc_{idx}"):
-                        st.audio(text_to_speech(item['result'], "ko"), format="audio/mp3", autoplay=True)
+        cols3 = st.columns(2)
+        for idx, (char, sound, roman, tip) in enumerate(consonants):
+            with cols3[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char}  `{roman}`")
+                    st.caption(f"搭配 ㅏ 唸作「{sound}」｜{tip}")
+                    if st.button("🔊 聽發音", key=f"kc_{idx}"):
+                        st.audio(text_to_speech(sound, "ko"), format="audio/mp3", autoplay=True)
 
-# ==========================================
-# 模組二：泰文零基礎發音拼音
-# ==========================================
-elif mode == "🇹🇭 泰文：零基礎發音拼音":
-    st.header("🇹🇭 泰文零基礎：字母與拼讀入門")
-    st.info("💡 泰文是由「子音」當主角，母音會寫在子音的「左、右、上、下」四個方向！")
-
-    tab1, tab2 = st.tabs(["1️⃣ 常見基礎子音", "2️⃣ 子音＋母音 拼讀練習"])
-
-    with tab1:
-        st.subheader("先認識幾個最常見的中子音")
-        thai_consonants = [
-            {"char": "ก", "name": "ก ไก่ (Gor Gai)", "sound": "กอ", "meaning": "雞 (發音接近不送氣的 g/k)"},
-            {"char": "จ", "name": "จ จาน (Jor Jaan)", "sound": "จอ", "meaning": "盤子 (發音接近 j/zh)"},
-            {"char": "ด", "name": "ด เด็ก (Dor Dek)", "sound": "ดอ", "meaning": "小孩 (發音接近 d)"},
-            {"char": "ต", "name": "ต เต่า (Tor Tao)", "sound": "ตอ", "meaning": "烏龜 (發音接近不送氣的 t/d)"},
-            {"char": "บ", "name": "บ ใบไม้ (Bor Bai-mai)", "sound": "บอ", "meaning": "樹葉 (發音接近 b)"},
-            {"char": "ป", "name": "ป ปลา (Por Plaa)", "sound": "ปอ", "meaning": "魚 (發音接近不送氣的 p/b)"},
-        ]
-        for idx, c in enumerate(thai_consonants):
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"### {c['char']} — {c['name']}")
-                    st.write(f"代表單字與發音提示：{c['meaning']}")
-                with c2:
-                    if st.button("🔊 聽字母音", key=f"tc_{idx}"):
-                        st.audio(text_to_speech(c['sound'], "th"), format="audio/mp3", autoplay=True)
-
-    with tab2:
-        st.subheader("中子音 ก (g) 搭配不同位置母音的拼讀")
-        thai_combos = [
-            {"formula": "ก + า (長音 aa，寫在右邊)", "result": "กา", "roman": "gaa", "meaning": "烏鴉 / 茶壺"},
-            {"formula": "ก + ี (長音 ii，寫在上面)", "result": "กี", "roman": "gii", "meaning": "拼讀練習音"},
-            {"formula": "ก + ู (長音 uu，寫在下面)", "result": "กู", "roman": "guu", "meaning": "拼讀練習音"},
-            {"formula": "เ (長音 ee，寫在左邊) + ก", "result": "เก", "roman": "gee", "meaning": "歪斜"},
-            {"formula": "โ (長音 oo，寫在左邊) + ก", "result": "โก", "roman": "goo", "meaning": "拼讀練習音"},
-        ]
-        for idx, item in enumerate(thai_combos):
-            with st.container(border=True):
-                c1, c2 = st.columns([3, 1])
-                with c1:
-                    st.markdown(f"### {item['formula']} ＝ **{item['result']}** ({item['roman']})")
-                    st.caption(f"字義參考：{item['meaning']}")
-                with c2:
-                    if st.button("🔊 唸拼讀", key=f"tcombo_{idx}"):
-                        st.audio(text_to_speech(item['result'], "th"), format="audio/mp3", autoplay=True)
-
-# ==========================================
-# 模組三：英文情境對話練習
-# ==========================================
-elif mode == "🇺🇸 英文：情境對話練習":
-    st.header("🇺🇸 英文情境對話模擬器")
-    st.write("選擇一個生活場景，試著用英文回覆對方，並點擊喇叭聽聽看道地的發音！")
-
-    scenarios = {
-        "☕ 咖啡廳點餐 (Ordering Coffee)": [
-            {"role": "assistant", "text": "Hi there! Welcome to Star Cafe. What can I get started for you today?", "hint": "試著回答你想喝什麼，例如：Hi, I would like an iced latte, please."},
-            {"role": "assistant", "text": "Sure! Would you like that for here or to go? And what size would you like?", "hint": "回答內用(for here)或外帶(to go)，以及大小杯(medium/large)。"},
-            {"role": "assistant", "text": "Got it. Anything else for you today, maybe a croissant or a muffin?", "hint": "回答是否還需要其他餐點，例如：No, that's all. Thank you!"},
-            {"role": "assistant", "text": "Alright, your total is $4.50. You can tap your card right here. Have a great day!", "hint": "禮貌道謝結束對話，例如：Thank you, you too!"}
-        ],
-        "✈️ 機場與飯店入住 (Hotel Check-in)": [
-            {"role": "assistant", "text": "Good afternoon! Welcome to Grand Hotel. How may I help you?", "hint": "表達你要辦理入住，例如：Hi, I have a reservation under [你的名字]."},
-            {"role": "assistant", "text": "Let me check... Yes, I see your booking for three nights. May I see your passport, please?", "hint": "遞出護照並回答，例如：Sure, here you go."},
-            {"role": "assistant", "text": "Thank you. Here is your room key. Breakfast is served from 7 to 10 AM on the second floor. Enjoy your stay!", "hint": "道謝並詢問 Wi-Fi 或道別，例如：Thank you so much!"}
-        ]
-    }
-
-    selected_scene = st.selectbox("選擇練習場景：", list(scenarios.keys()))
-    
-    # 初始化對話紀錄
-    if "scene" not in st.session_state or st.session_state.scene != selected_scene:
-        st.session_state.scene = selected_scene
-        st.session_state.step = 0
-        st.session_state.chat_history = [scenarios[selected_scene][0]]
-
-    # 顯示重置按鈕
-    if st.button("🔄 重新開始這段對話"):
-        st.session_state.step = 0
-        st.session_state.chat_history = [scenarios[selected_scene][0]]
-        st.rerun()
-
-    # 渲染對話氣泡
-    for idx, msg in enumerate(st.session_state.chat_history):
-        with st.chat_message(msg["role"]):
-            st.write(msg["text"])
-            if msg["role"] == "assistant":
-                # 提供發音按鈕與回覆提示
-                col_a, col_b = st.columns([1, 3])
-                with col_a:
-                    if st.button("🔊 聽對方說", key=f"chat_audio_{idx}"):
-                        st.audio(text_to_speech(msg["text"], "en"), format="audio/mp3", autoplay=True)
-                with col_b:
-                    if "hint" in msg:
-                        st.caption(f"💡 回覆提示：{msg['hint']}")
-
-    # 使用者輸入框
-    user_input = st.chat_input("在這裡輸入你的英文回覆...")
-    if user_input:
-        # 紀錄使用者的話
-        st.session_state.chat_history.append({"role": "user", "text": user_input})
-        st.session_state.step += 1
+    with tab3:
+        st.subheader("🧩 互動式「子音＋母音」自由拼讀機")
+        st.write("隨意挑選一個子音和一個母音，系統會幫你組合成正確的韓文字並唸出來！")
         
-        # 如果劇本還有下一句，加入 AI 回覆
-        scene_script = scenarios[selected_scene]
-        if st.session_state.step < len(scene_script):
-            st.session_state.chat_history.append(scene_script[st.session_state.step])
-        else:
-            st.session_state.chat_history.append({
-                "role": "assistant", 
-                "text": "🎉 太棒了！你已經完成這個場景的對話練習！可以點擊上方的「重新開始」或切換其他場景繼續練習。"
-            })
-        st.rerun()
+        c_list = ["ㄱ", "ㄲ", "ㄴ", "ㄷ", "ㄸ", "ㄹ", "ㅁ", "ㅂ", "ㅃ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅉ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"]
+        v_list = ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"]
+        
+        col_sel1, col_sel2 = st.columns(2)
+        with col_sel1:
+            sel_c = st.selectbox("1. 選擇子音：", c_list)
+        with col_sel2:
+            sel_v = st.selectbox("2. 選擇母音：", v_list)
+        
+        # 利用 Unicode 數學公式精準組合韓文字
+        c_idx = c_list.index(sel_c)
+        v_idx = v_list.index(sel_v)
+        combined_char = chr(0xAC00 + (c_idx * 21 + v_idx) * 28)
+        
+        with st.container(border=True):
+            st.markdown(f"<h1 style='text-align: center;'>{sel_c} + {sel_v} = {combined_char}</h1>", unsafe_allow_html=True)
+            if st.button("🔊 聽組合後的發音", use_container_width=True):
+                st.audio(text_to_speech(combined_char, "ko"), format="audio/mp3", autoplay=True)
+
+# ==========================================
+# 模組二：泰文完整字母與聲調表
+# ==========================================
+elif mode == "🇹🇭 泰文：完整字母與聲調表":
+    st.header("🇹🇭 泰文零基礎：字母分類與聲調入門")
+    st.info("💡 泰文子音分為「中、高、低」三組（決定聲調高低），母音則會寫在子音的上下左右！")
+
+    tab1, tab2, tab3 = st.tabs(["1️⃣ 核心子音 (中/高/低)", "2️⃣ 常用母音位置", "3️⃣ 五聲調聽力練習"])
+
+    with tab1:
+        st.subheader("中子音 (9個) — 最基礎、最常作為拼讀入門")
+        mid_c = [
+            ("ก", "กอ ไก่ (Gor Gai)", "雞 (g/k)"),
+            ("จ", "จอ จาน (Jor Jaan)", "盤子 (j)"),
+            ("ฎ", "ฎอ ชฎา (Dor Cha-daa)", "尖頂冠 (d)"),
+            ("ฏ", "ฏอ ปฏัก (Tor Pa-tak)", "刺棒 (t)"),
+            ("ด", "ดอ เด็ก (Dor Dek)", "小孩 (d)"),
+            ("ต", "ตอ เต่า (Tor Tao)", "烏龜 (t)"),
+            ("บ", "บอ ใบไม้ (Bor Bai-mai)", "樹葉 (b)"),
+            ("ป", "ปอ ปลา (Por Plaa)", "魚 (p)"),
+            ("อ", "ออ อ่าง (Or Aang)", "盆子 (零聲母)"),
+        ]
+        cols = st.columns(2)
+        for idx, (char, name, desc) in enumerate(mid_c):
+            with cols[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char} — `{desc}`")
+                    st.caption(name)
+                    if st.button("🔊 聽發音", key=f"tmc_{idx}"):
+                        st.audio(text_to_speech(name, "th"), format="audio/mp3", autoplay=True)
+
+        st.subheader("常見高子音 (自帶高音調)")
+        high_c = [
+            ("ข", "ขอ ไข่ (Khor Khai)", "蛋 (kh)"),
+            ("ฉ", "ฉอ ฉิ่ง (Chor Ching)", "鈸 (ch)"),
+            ("ถ", "ถอ ถุง (Thor Thung)", "袋子 (th)"),
+            ("ผ", "ผอ ผึ้ง (Phor Phueng)", "蜜蜂 (ph)"),
+            ("ฝ", "ฝอ ฝา (For Faa)", "蓋子 (f)"),
+            ("ส", "สอ เสือ (Sor Suea)", "老虎 (s)"),
+            ("ห", "หอ หีบ (Hor Heep)", "箱子 (h)"),
+        ]
+        cols_h = st.columns(2)
+        for idx, (char, name, desc) in enumerate(high_c):
+            with cols_h[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char} — `{desc}`")
+                    st.caption(name)
+                    if st.button("🔊 聽發音", key=f"thc_{idx}"):
+                        st.audio(text_to_speech(name, "th"), format="audio/mp3", autoplay=True)
+
+        st.subheader("常見低子音 (最常出現在日常單字)")
+        low_c = [
+            ("ค", "คอ ควาย (Khor Khwaai)", "水牛 (kh)"),
+            ("ง", "งอ งู (Ngor Nguu)", "蛇 (ng)"),
+            ("ช", "ชอ ช้าง (Chor Chaang)", "大象 (ch)"),
+            ("ซ", "ซอ โซ่ (Sor Soo)", "鎖鏈 (s)"),
+            ("ท", "ทอ ทหาร (Thor Tha-haan)", "軍人 (th)"),
+            ("น", "นอ หนู (Nor Nuu)", "老鼠 (n)"),
+            ("พ", "พอ พาน (Phor Phaan)", "高腳盤 (ph)"),
+            ("ฟ", "ฟอ ฟัน (For Fan)", "牙齒 (f)"),
+            ("ม", "มอ ม้า (Mor Maa)", "馬 (m)"),
+            ("ย", "ยอ ยักษ์ (Yor Yak)", "巨人 (y)"),
+            ("ร", "รอ เรือ (Ror Ruea)", "船 (r)"),
+            ("ล", "ลอ ลิง (Lor Ling)", "猴子 (l)"),
+            ("ว", "วอ แหวน (Wor Waaen)", "戒指 (w)"),
+        ]
+        cols_l = st.columns(2)
+        for idx, (char, name, desc) in enumerate(low_c):
+            with cols_l[idx % 2]:
+                with st.container(border=True):
+                    st.markdown(f"### {char} — `{desc}`")
+                    st.caption(name)
+                    if st.button("🔊 聽發音", key=f"tlc_{idx}"):
+                        st.audio(text_to_speech(name, "th"), format="audio/mp3", autoplay=True)
+
+    with tab2:
+        st.subheader("泰文母音位置示範（以中子音 ก 為例）")
+        st.write("泰文母音分「短音」與「長音」，且會出現在子音的不同方位：")
+        thai_vowels = [
+            ("ก + า = กา", "gaa (長音 aa)", "寫在子音【右邊】"),
+            ("ก + ะ = กะ", "ga (短音 a)", "寫在子音【右邊】"),
+            ("ก + ี = กี", "gii (長音 ii)", "寫在子音【上面】"),
+            ("ก + ิ = กิ", "gi (短音 i)", "寫在子音【上面】"),
+            ("ก + ู = กู", "guu (長音 uu)", "寫在子音【下面】"),
+            ("ก + ุ = กุ", "gu (短音 u)", "寫在子音【下面】"),
+            ("เ + ก = เก", "gee (長音 ee)", "寫在子音【左邊】"),
+            ("แ + ก = แก", "gaae (長音 aae)", "寫在子音【左邊】"),
+            ("โ + ก = โก", "goo (長音 oo)", "寫在子音【左邊】"),
+            ("ไ + ก = ไก", "gai (短音 ai)", "寫在子音【左邊】"),
+        ]
+        for idx, (example, roman, pos) in enumerate(thai_vowels):
+            with st.container(border=True):
+                c1, c2 = st.columns([3, 1])
+                with c1:
+                    st.markdown(f"### {example}  `{roman}`")
+                    st.caption(f"位置規則：{pos}")
+                with c2:
+                    word_to_read = example.split("=")[-1].strip()
+                    if st.button("🔊 唸拼讀", key=f"tv_{idx}"):
