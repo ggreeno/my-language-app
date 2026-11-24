@@ -15,7 +15,7 @@ def text_to_speech(text, lang_code):
     audio_bytes = io.BytesIO()
     tts.write_to_fp(audio_bytes)
     audio_bytes.seek(0)
-    return audio_bytes
+    return audio_bytes.getvalue()
 
 # 側邊欄：選擇語言模組
 st.sidebar.header("📚 選擇學習模組")
@@ -24,7 +24,7 @@ mode = st.sidebar.radio(
     [
         "🇰🇷 韓文：完整發音與拼讀機",
         "🇹🇭 泰文：完整字母與聲調表",
-        "🇺🇸 英文：AI 自由對話家教"
+        "🇺🇸 英文：AI 語音對話家教"
     ]
 )
 
@@ -239,129 +239,44 @@ elif mode == "🇹🇭 泰文：完整字母與聲調表":
                         st.audio(text_to_speech(word_to_read, "th"), format="audio/mp3", autoplay=True)
 
     with tab3:
-        st.subheader("🎵 泰文五聲調聽力對比")
-        st.write("泰文共有 5 個聲調（第一聲平調、第二聲低調、第三聲降調、第四聲高調、第五聲升調）。點按鈕聽聽看差別：")
-        tones = [
-            ("กา", "第一聲 (平調)", "類似中文第一聲，平穩念出 gaa"),
-            ("ก่า", "第二聲 (低調)", "壓低喉嚨往下沉的音調 gàa"),
-            ("ก้า", "第三聲 (降調)", "從高處往下掉（類似中文第四聲）gâa"),
-            ("ก๊า", "第四聲 (高調)", "音調高高揚起 gáa"),
-            ("ก๋า", "第五聲 (升調)", "先低再往上揚（類似中文第二聲）gǎa"),
-        ]
-        for idx, (word, tone_name, desc) in enumerate(tones):
-            with st.container(border=True):
-                c1, c2 = st.columns(2)
-                with c1:
-                    st.markdown(f"### {word} — **{tone_name}**")
-                    st.caption(desc)
-                with c2:
-                    if st.button("🔊 聽聲調", key=f"ttone_{idx}"):
-                        st.audio(text_to_speech(word, "th"), format="audio/mp3", autoplay=True)
-
-# ==========================================
-# 模組三：英文 AI 自由對話家教
-# ==========================================
-elif mode == "🇺🇸 英文：AI 自由對話家教":
-    st.header("🇺🇸 英文 AI 自由對話家教")
-    st.write("用英文輸入任何你想聊的內容！AI 會用自然英文跟你聊天，並在下方附上「文法與道地說法建議」。")
-
-    if "GEMINI_API_KEY" not in st.secrets:
-        st.warning("⚠️ 尚未設定 `GEMINI_API_KEY`！請先到 Streamlit 後台的 Settings > Secrets 貼上你的免費 Google AI Studio 金鑰，才能啟動自由對話喔。")
-        st.stop()
-
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        topic = st.selectbox(
-            "選擇聊天主題（或直接自由輸入）：",
-            [
-                "☕ 日常閒聊 (Daily Chat)",
-                "✈️ 出國旅遊與機場點餐 (Travel & Dining)",
-                "🎬 電影、追劇與偶像文化 (Movies & Pop Culture)",
-                "💼 職場與生活分享 (Work & Life)"
-            ]
-        )
-    with col_t2:
-        level = st.selectbox("AI 英文難度：", ["初級 (簡單短句)", "中級 (自然口語)"])
-
-    if "ai_messages" not in st.session_state:
-        st.session_state.ai_messages = [
-            {
-                "role": "assistant",
-                "english": "Hi there! I'm your English conversation partner. How is your day going so far?",
-                "feedback": "💡 試著用英文打字回覆我，例如：It's going pretty well, thank you! How about you?"
-            }
-        ]
-
-    if st.button("🔄 清除紀錄重新開始對話"):
-        st.session_state.ai_messages = [
-            {
-                "role": "assistant",
-                "english": f"Let's chat about {topic}! Tell me anything on your mind.",
-                "feedback": "💡 直接在下方輸入框打英文就可以開始聊天囉！"
-            }
-        ]
-        st.rerun()
-
-    for idx, msg in enumerate(st.session_state.ai_messages):
-        with st.chat_message(msg["role"]):
-            if msg["role"] == "user":
-                st.write(msg["content"])
-            else:
-                st.markdown(f"**{msg['english']}**")
-                if st.button("🔊 聽 AI 發音", key=f"ai_tts_{idx}"):
-                    st.audio(text_to_speech(msg["english"], "en"), format="audio/mp3", autoplay=True)
-                if msg.get("feedback"):
-                    with st.expander("📝 查看表達建議與中文提示", expanded=True):
-                        st.markdown(msg["feedback"])
-
-    user_text = st.chat_input("輸入英文跟 AI 聊天（不會拼的單字偶爾夾雜中文也可以）...")
-    if user_text:
-        st.session_state.ai_messages.append({"role": "user", "content": user_text})
-        
-        history_text = ""
-        for m in st.session_state.ai_messages[-6:]:
-            if m["role"] == "user":
-                history_text += f"User: {m['content']}\n"
-            else:
-                history_text += f"Tutor: {m['english']}\n"
-
-        system_instruction = f"""
-        你是一位親切、有耐心的英文口說家教，正在與一位母語為繁體中文的學習者進行「{topic}」主題的英文自由對話。
-        目前的對話難度設定為：{level}。
-        請嚴格按照以下格式回覆，並用「===SPLIT===」將兩個區塊分開：
-
-        第一區塊（純英文自然對話）：
-        用自然、生活化的英文回應學習者的話，並在結尾反問一個簡單相關的問題，引導對方繼續開口聊天。（注意：這個區塊只能有純英文，不要夾雜中文或表情符號，方便語音系統直接朗讀）。
-
-        ===SPLIT===
-
-        第二區塊（繁體中文學習回饋）：
-        1. 【AI 英文翻譯】：將第一區塊的英文翻譯成自然繁體中文。
-        2. 【你的句子健檢】：溫柔檢查學習者剛才那句英文有沒有文法錯誤；如果完全正確就給予肯定，並提供 1 句更道地、母語人士常用的替換說法（附中文解釋）。
-        """
-
-        with st.spinner("AI 家教正在思考回覆..."):
+        with st.spinner("AI 家教正在聽你說並思考回覆..."):
             try:
+                if new_audio_bytes:
+                    contents_payload = [
+                        f"最近的對話紀錄：\n{history_text}\n請聆聽學習者這段語音，並依照規定格式回覆：",
+                        types.Part.from_bytes(data=new_audio_bytes, mime_type="audio/wav")
+                    ]
+                else:
+                    contents_payload = f"最近的對話紀錄：\n{history_text}\n學習者剛才輸入：{user_text}\n請依照規定格式回覆："
+
                 response = client.models.generate_content(
                     model="gemini-2.5-flash",
-                    contents=f"最近的對話紀錄：\n{history_text}\n請根據學習者最後一句話進行回覆：",
+                    contents=contents_payload,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
                         temperature=0.7,
                     )
                 )
                 reply_raw = response.text
-                if "===SPLIT===" in reply_raw:
-                    eng_part, fb_part = reply_raw.split("===SPLIT===", 1)
+                parts = reply_raw.split("===SPLIT===")
+                if len(parts) >= 3:
+                    user_said, eng_part, fb_part = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                elif len(parts) == 2:
+                    user_said = user_text if user_text else "🎤 (語音訊息)"
+                    eng_part, fb_part = parts[0].strip(), parts[1].strip()
                 else:
-                    eng_part, fb_part = reply_raw, ""
+                    user_said = user_text if user_text else "🎤 (語音訊息)"
+                    eng_part, fb_part = reply_raw.strip(), ""
 
                 st.session_state.ai_messages.append({
+                    "role": "user",
+                    "content": f"🗣️ {user_said}" if new_audio_bytes else user_said
+                })
+                st.session_state.ai_messages.append({
                     "role": "assistant",
-                    "english": eng_part.strip(),
-                    "feedback": fb_part.strip()
+                    "english": eng_part,
+                    "feedback": fb_part,
+                    "autoplay": True
                 })
                 st.rerun()
             except Exception as e:
