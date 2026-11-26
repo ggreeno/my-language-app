@@ -261,7 +261,7 @@ elif mode == "🇺🇸 英文：AI 語音對話家教":
             with st.spinner("AI 家教正在思考並生成語音..."):
                 try:
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-3.8-flash",
                         contents=contents_payload,
                         config=types.GenerateContentConfig(system_instruction=system_prompt, temperature=0.7)
                     )
